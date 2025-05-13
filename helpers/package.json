@@ -1,0 +1,10 @@
+{
+    "name": "token-ownership-helpers",
+    "version": "1.0.0",
+    "description": "Helper scripts for token ownership verification",
+    "main": "build_merkle.js",
+    "dependencies": {
+        "fs-extra": "^11.1.0",
+        "keccak256": "^1.0.6"
+    }
+} 

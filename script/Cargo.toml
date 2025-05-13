@@ -1,0 +1,12 @@
+[package]
+name = "token-ownership-verification"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sp1-sdk = "4.0.0"
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4.4", features = ["derive"] }
+
+[build-dependencies]
+sp1-build = "4.0.0" 

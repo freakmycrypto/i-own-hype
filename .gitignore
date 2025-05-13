@@ -1,0 +1,25 @@
+# Cargo build artifacts
+program/target/
+script/target/
+
+# Cargo lock files
+program/Cargo.lock
+script/Cargo.lock
+
+# ELF builds
+**/target/elf-compilation/
+**/target/sp1/
+
+# Node modules
+helpers/node_modules/
+helpers/package-lock.json
+
+# State snapshot
+data/
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Generated proofs
+script/proof.bin 
