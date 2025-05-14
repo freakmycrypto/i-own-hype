@@ -14,9 +14,6 @@ script/Cargo.lock
 helpers/node_modules/
 helpers/package-lock.json
 
-# State snapshot
-data/
-
 # Python cache
 **/__pycache__/
 *.pyc

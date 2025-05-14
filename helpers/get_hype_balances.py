@@ -45,7 +45,7 @@ def save_to_json(pairs: List[Tuple[str, str]], output_file: str):
         json.dump(formatted_data, jsonfile, indent=2)
 
 def main():
-    input_file = '../data/state_561930000.json'
+    input_file = '/home/ubuntu/snapshot.json'
     output_file = '../data/balances.json'
     TOP_N = 10000  # Only keep top 10k addresses
     
