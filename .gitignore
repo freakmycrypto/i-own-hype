@@ -17,6 +17,3 @@ helpers/package-lock.json
 # Python cache
 **/__pycache__/
 *.pyc
-
-# Generated proofs
-script/proof.bin 

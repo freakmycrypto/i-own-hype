@@ -58,9 +58,8 @@ fn main() {
             println!("Verifying token ownership proof...");
             
             // Get the ELF file
-            let elf_path = std::env::var("SP1_ELF_token-ownership-program")
-                .expect("ELF path not found. Did you run 'cargo prove build' in the program directory?");
-            let elf = fs::read(elf_path).expect("Failed to read ELF file");
+            let elf_path = "../program/target/elf-compilation/docker/riscv32im-succinct-zkvm-elf/release/token-ownership-program";
+            let elf = fs::read(elf_path).expect("Failed to read ELF file at the expected path. Did you build the ELF with Docker?");
             
             // Create a ProverClient
             let client = ProverClient::from_env();

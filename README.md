@@ -1,88 +1,58 @@
-# Token Ownership Zero-Knowledge Proof
+# $HYPE Token Ownership Proof Verification
 
-This repository contains everything needed to verify a zero-knowledge proof of $HYPE token ownership. The proof demonstrates control of Ethereum addresses containing a balance of $HYPE tokens between 700,000 and 701,000 HYPE on Hyperliquid, without revealing which addresses are controlled.
+This repository allows you to **verify a zero-knowledge proof** that the prover controls Ethereum addresses holding a total of **700,000–701,000 $HYPE tokens** on Hyperliquid, as of block snapshot [#594790000 (May 14, 2025)](https://app.hyperliquid.xyz/explorer/block/594790000).
 
-## What's Being Verified
-
-The proof verifies that:
-1. The prover controls Ethereum addresses that appear in a specific Merkle tree (state snapshot from Hyperliquid)
-2. These addresses collectively contain a balance of $HYPE tokens between 700,000 and 701,000 HYPE
-3. All without revealing which addresses are controlled or their individual balances
+## What Does This Prove?
+- The prover controls addresses included in a Merkle tree of address:balance pairs, as created by [`helpers/build_merkle.js`](helpers/build_merkle.js), corresponding to $HYPE balances at block 594790000.
+- The total $HYPE balance controlled is **between 700,000 and 701,000**.
+- The proof **does not reveal which addresses** are controlled.
+- The proof publicly commits to:
+  - **Merkle root:** `1b09fe46084cde399ccc6823c68fc74ce94aafc30e0a781eab0de9033b2cfe30` (can be recreated with `build_merkle.js`)
+  - **Message digest:** `0x4e563b86ca0109cd9d73da502a033f70352f1c1b8722a2b6c33fb9e672d93ef6` (corresponds to `'I am @freakmycrypto and I am proving my $HYPE holdings'`)
 
 ## Prerequisites
+Install the following before verifying the proof:
+- **Rust & Cargo:** [Install instructions](https://www.rust-lang.org/tools/install)
+- **SP1 toolchain:**
+  ```bash
+  curl -L https://sp1up.succinct.xyz | bash && sp1up
+  ```
+- **Docker:** [Install instructions](https://docs.docker.com/get-docker/)
+- **Node.js & npm:** (for optional helper scripts)
+- **Python 3.x & pip:** (for optional data processing)
 
-- Rust and Cargo
-- SP1 toolchain (install with `curl -L https://sp1up.succinct.xyz | bash && sp1up`)
-- Docker (for reproducible builds)
-- Node.js (for helper scripts, optional)
-- Python 3.x (for state snapshot processing, optional)
+## How to Verify the Proof
 
-## Repository Structure
+1. **Build the ELF (reproducible, required for verification):**
+   ```bash
+   cd program
+   cargo prove build --docker --tag v4.0.0
+   # This creates: target/elf-compilation/docker/riscv32im-succinct-zkvm-elf/release/token-ownership-program
+   ```
 
-- `program/`: The SP1 program that performs the verification
-- `script/`: Contains the verification script
-- `helpers/`: Scripts to reproduce Merkle tree from state snapshot (optional)
-  - `get_hype_balances.py`: Extract $HYPE balances from Hyperliquid state snapshot
-  - `build_merkle.js`: Generate Merkle tree from balances
-- `data/`: Contains processed data from Hyperliquid block #561930000:
-  - `balances.json`: Processed $HYPE balances (already generated)
-  - `merkle_root.json`: Generated Merkle root from this state snapshot (already generated)
-  - `merkle_proofs.json`: Generated Merkle proofs for each address (already generated)
+2. **Verify the proof:**
+   ```bash
+   cd ../script
+   cargo run --release verify --proof-file proof.bin
+   ```
+   - This checks that `proof.bin` was generated against the exact ELF you just built.
+   - The output will confirm the $HYPE balance range and print the committed Merkle root and message digest.
 
-## Verifying the State Snapshot (Optional)
+## Auditing and Data Reproducibility
+- **Proof Logic:**
+  The full logic of the proof is open source and can be audited in [`program/src/main.rs`](program/src/main.rs).
+- **Reproducibility:**
+  - The file [`data/balance.json`](data/balance.json) can be **recreated** by running the provided `get_hype_balances.py` script on the official Hyperliquid block 594790000 snapshot. (See helper scripts and comments in the repo for details.)
+  - The **Merkle root** can be independently recomputed by running the provided `build_merkle.js` script on the processed balances.
+  - The **message digest** is recomputed and displayed as part of the verification script output (see the printed digest check in the terminal).
+  - The **ELF binary** used for proof generation and verification should be byte-for-byte identical. You can verify its SHA-512 hash:
+    ```bash
+    shasum -a 512 target/elf-compilation/docker/riscv32im-succinct-zkvm-elf/release/token-ownership-program
+    ```
+    The output should be:
+    ```
+    db7cd0f44663d3f8139eca7808ab551d34d063cd1efa6d9a5212844cc4af81a29db7a4923afb68cde0b9cec6c7a7c92cb2425058e6697725debd161c4686a7ee  target/elf-compilation/docker/riscv32im-succinct-zkvm-elf/release/token-ownership-program
+    ```
 
-The processed files in `data/` are already included and ready to use. However, if you want to verify the state snapshot and regenerate the Merkle root yourself:
+---
 
-1. Install dependencies:
-```bash
-cd helpers
-# Install Node.js dependencies
-npm install
-# Install Python dependencies
-pip install -r requirements.txt
-```
-
-2. Process the state snapshot to extract balances:
-```bash
-# Place your state_561930000.json file in the data directory first
-python get_hype_balances.py
-```
-This will:
-- Read the state snapshot from block #561930000
-- Extract address:$HYPE balance pairs from Hyperliquid state
-- Sort by balance (largest to smallest)
-- Take the top 10,000 addresses
-- Save to `data/balances.json`
-
-3. Generate Merkle tree from balances:
-```bash
-node build_merkle.js
-```
-This will:
-- Read the processed balances from `data/balances.json`
-- Generate the Merkle tree and root
-- Save the root data to `data/merkle_root.json`
-- Save individual proofs to `data/merkle_proofs.json`
-
-## Building the Program
-
-For development (faster, but not reproducible):
-```bash
-cd program
-cargo prove build
-```
-
-For production (reproducible builds using Docker):
-```bash
-cd program
-cargo prove build --docker --tag v4.0.0
-```
-
-The Docker build is recommended for production use as it generates reproducible ELF files that will be identical across all platforms.
-
-## Security Notes
-
-1. The Merkle root represents the Hyperliquid state at block #561930000 - verify this matches your expected state
-2. The program code is public and builds reproducibly with Docker - you can verify exactly what's being proven
-3. No private data (addresses, individual balances, or signatures) is included in this repository
-4. You can optionally reproduce the Merkle tree from the state snapshot using the helper scripts, though the processed files are already provided 
