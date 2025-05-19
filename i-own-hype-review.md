@@ -1,0 +1,40 @@
+# I-Own-Hype Audit
+
+Audited by [https://github.com/nhtyy](https://github.com/nhtyy)
+
+## Repo Overview
+
+The `I-Own-Hype` repo creates a “proof of funds” based on a known & trusted snapshot of a Hyperliquid block. The block snapshot is converted to JSON, then a merkle tree is created from the top balances.
+
+The inputs to the proof assume the merkle root is trusted, the script to create the tree is in the repo and anyone can verify the root is valid by running the script with the known snapshot.
+
+The holder makes a claim that they possess private keys (via a signature) of some $HYPE holders, the sum of the balances of those addresses is taken.
+
+## Assumptions
+
+- The state snapshots **MUST** **BE** correct and valid for the given block.
+- A proof **MUST** **BE** generated with PLONK or GROTH modes
+    - Any other proof types are NOT ZK!
+- The committed digest **MUST** **BE** checked to be the fixed message.
+
+## Findings
+
+- commit: 8a8d8f39a510a533b22fa35e66004f5c50faeaef
+
+| Severity         | ID | Description                                                      | Recommendation                                                                                                                                                                                                                                                                                                             | Affected LOC                                                                                                                     |
+| ---------------- | -- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| ⚠️ Critical      | #1 | Arbitrary message digest allows impersonation of any HYPE holder | Sign off on the hash of the leaf you’re proving inclusion of concatenated with a nonce, reconstruct the hash in the program.<br>Instead of committing to the message digest, just commit to the nonce to prevent replay attacks.<br>ie. a consumer of the proof would accept a proof iff it has not seen the nonce before. | [main.rs#L25](https://github.com/anonbuilderpm/i-own-hype/blob/8a8d8f39a510a533b22fa35e66004f5c50faeaef/program/src/main.rs#L25) |
+| 🔴 High          | #2 | Small balance range can lead to doxxing                          | For future use, a minimum bound should be passed in as input, commit to public values `total_balance >= min_balance` and `min_balance`.<br>But be careful to make sure you choose a bound that includes at least \~100 other holders!                                                                                      | [main.rs#L19](https://github.com/anonbuilderpm/i-own-hype/blob/8a8d8f39a510a533b22fa35e66004f5c50faeaef/program/src/main.rs#L19) |
+| ℹ️ Informational | #3 | Unnecessary hex encoding                                         | Just return a `Vec<u8>` of the pubkey bytes, then hash that directly.                                                                                                                                                                                                                                                      | [main.rs#L75](https://github.com/anonbuilderpm/i-own-hype/blob/8a8d8f39a510a533b22fa35e66004f5c50faeaef/program/src/main.rs#L75) |
+| ℹ️ Informational | #4 | Alloy could be used to simplify code                             | Use the `alloy` crate to convert to an address, store this type in the hash set instead of a string.<br>[Alloy Docs](https://docs.rs/alloy-primitives/latest/alloy_primitives/struct.Address.html#method.from_raw_public_key)                                                                                              | [main.rs#L79](https://github.com/anonbuilderpm/i-own-hype/blob/8a8d8f39a510a533b22fa35e66004f5c50faeaef/program/src/main.rs#L79) |
+
+
+## Remediations
+
+#1: The verifier program was amended to always check that the digest corresponds to a known and expected message, replay attacks were considered out of scope, the digest we care about actually commits to the users twitter account.
+
+#2: Acknowledged, given the distribution of the balances, and that the user is supplying multiple signers, the search space is too large to be considered feasible.
+
+#3 Fixed
+
+#4 Fixed
